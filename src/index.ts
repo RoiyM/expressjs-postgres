@@ -1,55 +1,26 @@
-import bodyParser from "body-parser";
-import express from "express";
-import pg from "pg";
-import http from "http";
 import WebSocket from "ws";
 
-// Connect to the database using the DATABASE_URL environment
-//   variable injected by Railway
-const pool = new pg.Pool();
+const PORT = 8080; // Change this to the desired port number
 
-const app = express();
-const port = process.env.PORT || 8080;
-const wsPort = 3333;
+// Create a WebSocket server instance
+const wss = new WebSocket.Server({ port: PORT });
 
-const server = http.createServer(app);
-const wss = new WebSocket.Server({ server });
+// This event will be triggered when a new WebSocket connection is established
+wss.on("connection", (ws) => {
+  console.log("New client connected");
 
-const clients = new Set();
+  // Event listener for messages received from the client
+  ws.on("message", (message) => {
+    console.log("Received message:", message);
 
-app.use(bodyParser.json());
-app.use(bodyParser.raw({ type: "application/vnd.custom-type" }));
-app.use(bodyParser.text({ type: "text/html" }));
-
-app.get("/", async (req, res) => {
-  const { rows } = await pool.query("SELECT NOW()");
-  res.send(`Hello, World! The time from the DB is ${rows[0].now}`);
-});
-
-const broadcastMessage = (message: string) => {
-  clients.forEach((client: any) => {
-    if (client.readyState === WebSocket.OPEN) {
-      client.send(message);
-    }
-  });
-};
-
-wss.on("connection", (ws: any) => {
-  clients.add(ws);
-
-  ws.on("message", (message: string) => {
-    broadcastMessage(message);
+    // Echo the received message back to the client
+    ws.send(message);
   });
 
+  // Event listener for the client connection close
   ws.on("close", () => {
-    clients.delete(ws);
+    console.log("Client disconnected");
   });
 });
 
-app.listen(port, () => {
-  console.log(`Example app listening at http://localhost:${port}`);
-});
-
-server.listen(wsPort, () => {
-  console.log(`WebSocket server listening on port ${wsPort}`);
-});
+console.log(`WebSocket server listening on port ${PORT}`);

@@ -10,7 +10,7 @@ const pool = new pg.Pool();
 
 const app = express();
 const port = process.env.PORT || 8080;
-const wsPort = process.env.PORT || 3333;
+const wsPort = 3333;
 
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
